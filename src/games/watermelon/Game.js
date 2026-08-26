@@ -51,6 +51,13 @@ export class Game {
     app.ticker.add(this.update, this);
   }
 
+  /** 销毁游戏，释放资源（返回首页时调用） */
+  destroy() {
+    this.app.ticker.remove(this.update, this);
+    this.gameLayer.destroy({ children: true });
+    this.uiLayer.destroy({ children: true });
+  }
+
   randomLevel() {
     return Math.floor(Math.random() * (RANDOM_FRUIT_MAX_LEVEL + 1));
   }
@@ -207,17 +214,17 @@ export class Game {
 
     // 下一个水果提示
     this.nextLabel = new PIXI.Text('下一个', {
-      fontSize: 14,
+      fontSize: 12,
       fill: 0x8d6e63,
     });
-    this.nextLabel.anchor.set(1, 0);
-    this.nextLabel.x = GAME_WIDTH - 60;
-    this.nextLabel.y = 12;
+    this.nextLabel.anchor.set(0.5, 0);
+    this.nextLabel.x = GAME_WIDTH - 30;
+    this.nextLabel.y = 8;
     this.uiLayer.addChild(this.nextLabel);
 
     this.nextPreview = new PIXI.Container();
-    this.nextPreview.x = GAME_WIDTH - 34;
-    this.nextPreview.y = 44;
+    this.nextPreview.x = GAME_WIDTH - 30;
+    this.nextPreview.y = 48;
     this.uiLayer.addChild(this.nextPreview);
 
     // 道具栏
@@ -268,8 +275,11 @@ export class Game {
   }
 
   setupItemBar() {
+    const buttonSize = 44;
+    const gap = 6;
     this.itemBar = new PIXI.Container();
-    this.itemBar.x = (GAME_WIDTH - 3 * 50 - 2 * 6) / 2;
+    // 右侧预留紧凑的“下一个”区域，避免道具栏遮住左侧得分。
+    this.itemBar.x = GAME_WIDTH - 70 - (3 * buttonSize + 2 * gap);
     this.itemBar.y = 10;
     this.uiLayer.addChild(this.itemBar);
 
@@ -277,23 +287,23 @@ export class Game {
     const types = ['bomb', 'shake', 'evolve'];
     types.forEach((type, i) => {
       const btn = new PIXI.Container();
-      btn.x = i * 56;
+      btn.x = i * (buttonSize + gap);
       btn.eventMode = 'static';
       btn.cursor = 'pointer';
       // 显式命中区域（带内边距），确保按钮可靠点击
-      btn.hitArea = new PIXI.Rectangle(-6, -6, 62, 62);
+      btn.hitArea = new PIXI.Rectangle(-4, -4, buttonSize + 8, buttonSize + 8);
 
       const bg = new PIXI.Graphics();
       bg.beginFill(0xffffff, 0.85);
       bg.lineStyle(2, 0xd4a76a, 1);
-      bg.drawRoundedRect(0, 0, 50, 50, 10);
+      bg.drawRoundedRect(0, 0, buttonSize, buttonSize, 10);
       bg.endFill();
       btn.addChild(bg);
 
-      const icon = new PIXI.Text(ITEMS[type].emoji, { fontSize: 24 });
+      const icon = new PIXI.Text(ITEMS[type].emoji, { fontSize: 21 });
       icon.anchor.set(0.5);
-      icon.x = 25;
-      icon.y = 22;
+      icon.x = buttonSize / 2;
+      icon.y = buttonSize / 2;
       btn.addChild(icon);
 
       const count = new PIXI.Text('0', {
@@ -303,13 +313,13 @@ export class Game {
       });
       const badge = new PIXI.Graphics();
       badge.beginFill(0xe74c3c);
-      badge.drawCircle(0, 0, 9);
+      badge.drawCircle(0, 0, 8);
       badge.endFill();
-      badge.x = 42;
-      badge.y = 8;
+      badge.x = buttonSize - 6;
+      badge.y = 6;
       count.anchor.set(0.5);
-      count.x = 42;
-      count.y = 8;
+      count.x = buttonSize - 6;
+      count.y = 6;
       btn.addChild(badge);
       btn.addChild(count);
 
@@ -334,7 +344,7 @@ export class Game {
       bg.clear();
       bg.beginFill(this.bombMode && type === 'bomb' ? 0xffcdd2 : 0xffffff, 0.9);
       bg.lineStyle(2, this.bombMode && type === 'bomb' ? 0xd32f2f : 0xd4a76a, 1);
-      bg.drawRoundedRect(0, 0, 50, 50, 10);
+      bg.drawRoundedRect(0, 0, 44, 44, 10);
       bg.endFill();
     }
   }
