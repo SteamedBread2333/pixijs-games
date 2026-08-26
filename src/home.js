@@ -4,10 +4,15 @@ import { GAME_WIDTH, GAME_HEIGHT } from './config.js';
 import { GAMES } from './games/index.js';
 import { UI_FONT, makeButton, drawBackground } from './ui.js';
 
+// 滚动区域参数
+const SCROLL_TOP = 138;           // 滚动区域起始 Y
+const SCROLL_BOTTOM = GAME_HEIGHT - 50; // 滚动区域结束 Y（留底部提示空间）
+const SCROLL_HEIGHT = SCROLL_BOTTOM - SCROLL_TOP;
+
 function drawGameIcon(gameId) {
   const icon = new PIXI.Container();
   const plate = new PIXI.Graphics();
-  plate.beginFill(gameId === 'watermelon' ? 0x244b3d : gameId === 'cursorquest' ? 0x2a243d : 0x243d63);
+  plate.beginFill(gameId === 'watermelon' ? 0x244b3d : gameId === 'cursorquest' ? 0x2a243d : gameId === 'klotski' ? 0x3d2424 : 0x243d63);
   plate.drawRoundedRect(0, 0, 92, 92, 24);
   plate.endFill();
   icon.addChild(plate);
@@ -26,7 +31,6 @@ function drawGameIcon(gameId) {
     });
     art.endFill();
   } else if (gameId === 'cursorquest') {
-    // 像素小人：8x8 像素点阵
     const pix = 6;
     const ox = 8;
     const oy = 8;
@@ -47,12 +51,48 @@ function drawGameIcon(gameId) {
         art.endFill();
       }
     }
-    // 三个核心提示点
     art.beginFill(0xffd35c);
     [22, 46, 70].forEach((x) => {
       art.drawCircle(x, 78, 4);
     });
     art.endFill();
+  } else if (gameId === 'klotski') {
+    const cs = 18;
+    const ox = 10;
+    const oy = 10;
+    art.beginFill(0xe85d4a);
+    art.drawRoundedRect(ox + cs, oy, cs * 2 - 3, cs * 2 - 3, 5);
+    art.endFill();
+    art.beginFill(0x4caf73);
+    art.drawRoundedRect(ox, oy, cs - 3, cs * 2 - 3, 4);
+    art.endFill();
+    art.beginFill(0x5b8def);
+    art.drawRoundedRect(ox + cs * 3, oy, cs - 3, cs * 2 - 3, 4);
+    art.endFill();
+    art.beginFill(0xf1c40f);
+    art.drawRoundedRect(ox, oy + cs * 2, cs - 3, cs - 3, 4);
+    art.endFill();
+    art.beginFill(0xf1c40f);
+    art.drawRoundedRect(ox + cs, oy + cs * 2, cs - 3, cs - 3, 4);
+    art.endFill();
+    art.beginFill(0x9c4aef);
+    art.drawRoundedRect(ox + cs * 2, oy + cs * 2, cs * 2 - 3, cs - 3, 4);
+    art.endFill();
+    art.beginFill(0x4caf73);
+    art.drawRoundedRect(ox, oy + cs * 3, cs - 3, cs - 3, 4);
+    art.endFill();
+    art.beginFill(0x5b8def);
+    art.drawRoundedRect(ox + cs * 3, oy + cs * 3, cs - 3, cs - 3, 4);
+    art.endFill();
+    const arrow = new PIXI.Text('▼', {
+      fontFamily: UI_FONT,
+      fontSize: 14,
+      fill: 0xe85d4a,
+    });
+    arrow.anchor.set(0.5);
+    arrow.x = 46;
+    arrow.y = 84;
+    icon.addChild(arrow);
   } else {
     const blocks = [
       [22, 24, 0xff6b6b], [44, 24, 0xff6b6b],
@@ -69,19 +109,40 @@ function drawGameIcon(gameId) {
   return icon;
 }
 
+function lerp(a, b, t) {
+  return a + (b - a) * t;
+}
+
 export class HomeScreen {
   constructor(app) {
     this.app = app;
     this.layer = new PIXI.Container();
     app.stage.addChild(this.layer);
 
+    // 滚动状态
+    this.scrollY = 0;
+    this.scrollVelocity = 0;
+    this.isDragging = false;
+    this.dragMoved = false;
+    this.dragStartY = 0;
+    this.dragStartScroll = 0;
+    this.lastDragY = 0;
+    this.lastDragTime = 0;
+
     this.drawBackground();
     this.drawTitle();
     this.drawGameCards();
     this.drawFooter();
+    this.setupScroll();
+    this.startTicker();
   }
 
   destroy() {
+    if (this.tickerCb) {
+      this.app.ticker.remove(this.tickerCb);
+      this.tickerCb = null;
+    }
+    this.cleanupScroll();
     this.layer.destroy({ children: true });
   }
 
@@ -119,15 +180,29 @@ export class HomeScreen {
   }
 
   drawGameCards() {
+    // 滚动容器：所有卡片放在里面
+    this.scrollContainer = new PIXI.Container();
+    this.scrollContainer.y = SCROLL_TOP;
+    this.layer.addChild(this.scrollContainer);
+
+    // 遮罩：裁剪超出滚动区域的内容
+    const mask = new PIXI.Graphics();
+    mask.beginFill(0xffffff);
+    mask.drawRect(0, 0, GAME_WIDTH, SCROLL_HEIGHT);
+    mask.endFill();
+    mask.y = SCROLL_TOP;
+    this.layer.addChild(mask);
+    this.scrollContainer.mask = mask;
+    this.scrollMask = mask;
+
     const cardW = 340;
     const cardH = 132;
-    const startY = 138;
     const gap = 18;
 
     GAMES.forEach((game, i) => {
       const card = new PIXI.Container();
       card.x = (GAME_WIDTH - cardW) / 2;
-      card.y = startY + i * (cardH + gap);
+      card.y = i * (cardH + gap);
 
       const bg = new PIXI.Graphics();
       bg.beginFill(0x1c2940, 0.94);
@@ -187,28 +262,149 @@ export class HomeScreen {
         ? 0x3e9b69
         : game.id === 'cursorquest'
           ? 0x6a4ad0
-          : 0x497fd1;
+          : game.id === 'klotski'
+            ? 0xe85d4a
+            : 0x497fd1;
+
+      // 卡片点击进入游戏（但拖拽时不触发）
+      const goGame = () => {
+        if (this.dragMoved) return;
+        window.location.hash = `#/game/${game.id}`;
+      };
+
       const play = makeButton('开始', 72, 30, () => {
+        if (this.dragMoved) return;
         window.location.hash = `#/game/${game.id}`;
       }, { fill: playFill, fontSize: 13 });
       play.x = 124;
       play.y = 88;
       card.addChild(play);
 
-      // 整张卡片也可点击进入：用 pointerup 兜底，避免 pointertap 不可靠
+      // 整张卡片可点击
       const hit = new PIXI.Graphics();
       hit.beginFill(0x000000, 0.01);
       hit.drawRect(0, 0, cardW, cardH);
       hit.endFill();
       hit.eventMode = 'static';
       hit.cursor = 'pointer';
-      const goGame = () => { window.location.hash = `#/game/${game.id}`; };
       hit.on('pointerup', goGame);
       hit.on('pointertap', goGame);
       card.addChild(hit);
 
-      this.layer.addChild(card);
+      this.scrollContainer.addChild(card);
     });
+
+    // 内容总高度
+    this.contentHeight = GAMES.length * (cardH + gap) - gap;
+    // 最大可滚动距离
+    this.maxScroll = Math.max(0, this.contentHeight - SCROLL_HEIGHT);
+  }
+
+  setupScroll() {
+    // 在 stage 级别监听指针事件来实现拖拽滚动
+    // stage 的事件会在子元素（卡片按钮）之前触发，我们可以在这里处理拖拽
+    this.onPointerDown = (e) => this.handlePointerDown(e);
+    this.onPointerMove = (e) => this.handlePointerMove(e);
+    this.onPointerUp = (e) => this.handlePointerUp(e);
+
+    this.app.stage.on('pointerdown', this.onPointerDown);
+    this.app.stage.on('pointermove', this.onPointerMove);
+    this.app.stage.on('pointerup', this.onPointerUp);
+    this.app.stage.on('pointerupoutside', this.onPointerUp);
+  }
+
+  cleanupScroll() {
+    if (this.onPointerDown) {
+      this.app.stage.off('pointerdown', this.onPointerDown);
+      this.app.stage.off('pointermove', this.onPointerMove);
+      this.app.stage.off('pointerup', this.onPointerUp);
+      this.app.stage.off('pointerupoutside', this.onPointerUp);
+      this.onPointerDown = null;
+    }
+  }
+
+  handlePointerDown(e) {
+    // 只在滚动区域内开始拖拽
+    const localY = e.global.y;
+    if (localY < SCROLL_TOP || localY > SCROLL_BOTTOM) return;
+    if (this.maxScroll <= 0) return;
+
+    this.isDragging = true;
+    this.dragMoved = false;
+    this.scrollVelocity = 0;
+    this.dragStartY = e.global.y;
+    this.dragStartScroll = this.scrollY;
+    this.lastDragY = e.global.y;
+    this.lastDragTime = Date.now();
+  }
+
+  handlePointerMove(e) {
+    if (!this.isDragging) return;
+
+    const dy = e.global.y - this.dragStartY;
+    if (Math.abs(dy) > 4) {
+      this.dragMoved = true;
+    }
+
+    let newY = this.dragStartScroll + dy;
+
+    // 边界阻尼回弹
+    if (newY > 0) {
+      newY = newY * 0.35;
+    }
+    if (newY < -this.maxScroll) {
+      const over = newY + this.maxScroll;
+      newY = -this.maxScroll + over * 0.35;
+    }
+
+    this.scrollY = newY;
+
+    // 计算瞬时速度
+    const now = Date.now();
+    const dt = now - this.lastDragTime;
+    if (dt > 0) {
+      const vy = (e.global.y - this.lastDragY) / dt;
+      this.scrollVelocity = vy * 16;
+    }
+    this.lastDragY = e.global.y;
+    this.lastDragTime = now;
+  }
+
+  handlePointerUp() {
+    this.isDragging = false;
+    // 延迟重置 dragMoved，确保卡片点击回调能检测到
+    setTimeout(() => { this.dragMoved = false; }, 50);
+  }
+
+  startTicker() {
+    this.tickerCb = () => {
+      if (!this.scrollContainer) return;
+
+      if (!this.isDragging) {
+        // 惯性滚动
+        if (Math.abs(this.scrollVelocity) > 0.3) {
+          this.scrollY += this.scrollVelocity;
+          this.scrollVelocity *= 0.92;
+        } else {
+          this.scrollVelocity = 0;
+        }
+
+        // 边界回弹
+        if (this.scrollY > 0) {
+          this.scrollY = lerp(this.scrollY, 0, 0.18);
+          if (Math.abs(this.scrollY) < 0.5) this.scrollY = 0;
+        }
+        if (this.scrollY < -this.maxScroll) {
+          this.scrollY = lerp(this.scrollY, -this.maxScroll, 0.18);
+          if (Math.abs(this.scrollY + this.maxScroll) < 0.5) {
+            this.scrollY = -this.maxScroll;
+          }
+        }
+      }
+
+      this.scrollContainer.y = SCROLL_TOP + this.scrollY;
+    };
+    this.app.ticker.add(this.tickerCb);
   }
 
   drawFooter() {

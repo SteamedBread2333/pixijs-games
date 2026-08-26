@@ -3,6 +3,7 @@ import { GAME_WIDTH, GAME_HEIGHT } from '../config.js';
 import { Game as WatermelonGame } from './watermelon/Game.js';
 import { SuperBlockGame } from './superblock/SuperBlockGame.js';
 import { CursorQuestGame } from './cursorquest/CursorQuestGame.js';
+import { KlotskiGame } from './klotski/KlotskiGame.js';
 
 export const GAMES = [
   {
@@ -35,5 +36,15 @@ export const GAMES = [
     background: '#101724',
     assets: [],
     create: (app) => new CursorQuestGame(app),
+  },
+  {
+    id: 'klotski',
+    name: '华容道',
+    desc: '经典+数字 · 双模式滑块解谜',
+    width: GAME_WIDTH,
+    height: GAME_HEIGHT,
+    background: '#1a1520',
+    assets: [],
+    create: (app) => new KlotskiGame(app),
   },
 ];

@@ -1,3 +1,5 @@
 node_modules
 dist
 *-plan.md
+.workbuddy-ai/*
+screenshots/*
