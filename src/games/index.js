@@ -4,6 +4,7 @@ import { Game as WatermelonGame } from './watermelon/Game.js';
 import { SuperBlockGame } from './superblock/SuperBlockGame.js';
 import { CursorQuestGame } from './cursorquest/CursorQuestGame.js';
 import { KlotskiGame } from './klotski/KlotskiGame.js';
+import { BlockStormGame } from './blockstorm/BlockStormGame.js';
 
 export const GAMES = [
   {
@@ -46,5 +47,15 @@ export const GAMES = [
     background: '#1a1520',
     assets: [],
     create: (app) => new KlotskiGame(app),
+  },
+  {
+    id: 'blockstorm',
+    name: '方块风暴',
+    desc: '连锁消除 · 守住警戒线',
+    width: GAME_WIDTH,
+    height: GAME_HEIGHT,
+    background: '#101724',
+    assets: [],
+    create: (app) => new BlockStormGame(app),
   },
 ];

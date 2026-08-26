@@ -472,7 +472,10 @@ export class CursorQuestGame {
     const story = getStory(levelIndex + 1);
     if (story) this._showStory(story);
 
-    // 启用游戏 ticker
+    // 启用游戏 ticker（先清理旧 ticker，防止重复添加）
+    if (this._gameTicker) {
+      this.app.ticker.remove(this._gameTicker, this);
+    }
     this._gameTicker = (dt) => this._gameUpdate(dt / 60);
     this.app.ticker.add(this._gameTicker, this);
 
@@ -868,6 +871,9 @@ export class CursorQuestGame {
       this.app.ticker.remove(this._gameTicker, this);
       this._gameTicker = null;
     }
+    this.hazardViews = [];
+    this.coreViews = [];
+    this.shardViews = [];
     this.showLevelSelect();
   }
 

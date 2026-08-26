@@ -12,7 +12,7 @@ const SCROLL_HEIGHT = SCROLL_BOTTOM - SCROLL_TOP;
 function drawGameIcon(gameId) {
   const icon = new PIXI.Container();
   const plate = new PIXI.Graphics();
-  plate.beginFill(gameId === 'watermelon' ? 0x244b3d : gameId === 'cursorquest' ? 0x2a243d : gameId === 'klotski' ? 0x3d2424 : 0x243d63);
+  plate.beginFill(gameId === 'watermelon' ? 0x244b3d : gameId === 'cursorquest' ? 0x2a243d : gameId === 'klotski' ? 0x3d2424 : gameId === 'blockstorm' ? 0x203452 : 0x243d63);
   plate.drawRoundedRect(0, 0, 92, 92, 24);
   plate.endFill();
   icon.addChild(plate);
@@ -56,6 +56,26 @@ function drawGameIcon(gameId) {
       art.drawCircle(x, 78, 4);
     });
     art.endFill();
+  } else if (gameId === 'blockstorm') {
+    // 方块风暴：四色连锁方块与警戒线
+    const colors = [0xff6b6b, 0x5b8def, 0x4ecb8d, 0xf5be48];
+    const size = 16;
+    const layout = [
+      [0, 0, 0], [1, 0, 1], [2, 0, 2], [3, 0, 3],
+      [0, 1, 1], [1, 1, 1], [2, 1, 3], [3, 1, 2],
+      [0, 2, 2], [1, 2, 0], [2, 2, 0], [3, 2, 1],
+    ];
+    layout.forEach(([col, row, color]) => {
+      art.beginFill(colors[color]);
+      art.drawRoundedRect(12 + col * size, 18 + row * size, size - 2, size - 2, 4);
+      art.endFill();
+      art.beginFill(0xffffff, 0.18);
+      art.drawRoundedRect(15 + col * size, 21 + row * size, size - 8, 3, 2);
+      art.endFill();
+    });
+    art.lineStyle(2, 0xff9292, 0.9);
+    art.moveTo(10, 14);
+    art.lineTo(82, 14);
   } else if (gameId === 'klotski') {
     const cs = 18;
     const ox = 10;
@@ -264,7 +284,9 @@ export class HomeScreen {
           ? 0x6a4ad0
           : game.id === 'klotski'
             ? 0xe85d4a
-            : 0x497fd1;
+            : game.id === 'blockstorm'
+              ? 0x5b8def
+              : 0x497fd1;
 
       // 卡片点击进入游戏（但拖拽时不触发）
       const goGame = () => {

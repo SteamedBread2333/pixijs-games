@@ -638,6 +638,7 @@ export function createHazardView(h) {
 }
 
 function drawHazard(c) {
+  if (!c || !c.gfx || c.gfx._destroyed) return;
   const h = c.hazard;
   const g = c.gfx;
   g.clear();
@@ -647,6 +648,7 @@ function drawHazard(c) {
 
 /** 每帧更新：根据 h.t / h.on / h.pulse / h.angle 等变化重绘 */
 export function updateHazard(c, dt) {
+  if (!c || !c.gfx || c.gfx._destroyed) return;
   const h = c.hazard;
   h.t = (h.t || 0) + dt;
   // 周期量
