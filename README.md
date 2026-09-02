@@ -72,6 +72,20 @@
 
 > 藏起光标 · 收集核心 · 走出迷局
 
+### 🔗 连线迷航
+
+> 连接同色点 · 铺满每一格 · 复刻 Steam《Lines X Free》
+
+网格上散布若干对同色端点，用连续路径把每对同色点连起来。路径只能上下左右延伸、不能交叉重叠，最终所有格子都要被路径覆盖。共 50 关，前松后紧（5×5 起步、9×9 满 10 对端点地狱级），难度由「随机哈密顿路径 + 切分」生成。
+
+**特色功能：**
+
+- 🖱 点选端点拖拽延伸，鼠标 / 触控均适配
+- 🎨 全矢量绘制（PixiJS Graphics），任意分辨率不失真
+- ↶ 撤销 / ↻ 重置 · 计时 · 三星评价
+- 🔊 WebAudio 合成音效
+- 💾 关卡进度本地存档 · 固定种子保证每关可解
+
 ---
 
 ## 🚀 本地运行
@@ -125,6 +139,12 @@ pixijs-games/
 │       │   ├── progress.js      # 进度存档（localStorage）
 │       │   └── sound.js         # 音效系统（WebAudio）
 │       ├── blockstorm/    # 方块风暴（连锁消除 · 道具 · 最高分）
+│       ├── lines/         # 连线迷航（Numberlink · 复刻 Lines X Free）
+│       │   ├── LinesGame.js    # 游戏主逻辑（选关 · 连线 · 撤销 · 三星）
+│       │   ├── config.js       # 关卡生成器（哈密顿路径切分）+ 50 关数据（固定种子）
+│       │   ├── art.js          # 矢量图形（端点球 · 路径 · 图标）
+│       │   ├── progress.js     # 进度存档（localStorage）
+│       │   └── sound.js        # 音效系统（WebAudio）
 │       └── cursorquest/   # 光标迷航
 └── .github/workflows/
     └── deploy.yml          # GitHub Actions 自动部署

@@ -12,7 +12,7 @@ const SCROLL_HEIGHT = SCROLL_BOTTOM - SCROLL_TOP;
 function drawGameIcon(gameId) {
   const icon = new PIXI.Container();
   const plate = new PIXI.Graphics();
-  plate.beginFill(gameId === 'watermelon' ? 0x244b3d : gameId === 'cursorquest' ? 0x2a243d : gameId === 'klotski' ? 0x3d2424 : gameId === 'blockstorm' ? 0x203452 : 0x243d63);
+  plate.beginFill(gameId === 'watermelon' ? 0x244b3d : gameId === 'cursorquest' ? 0x2a243d : gameId === 'klotski' ? 0x3d2424 : gameId === 'blockstorm' ? 0x203452 : gameId === 'lines' ? 0x1f3a4a : 0x243d63);
   plate.drawRoundedRect(0, 0, 92, 92, 24);
   plate.endFill();
   icon.addChild(plate);
@@ -113,6 +113,35 @@ function drawGameIcon(gameId) {
     arrow.x = 46;
     arrow.y = 84;
     icon.addChild(arrow);
+  } else if (gameId === 'lines') {
+    // 连线迷航：彩色端点 + 折线连接
+    const cs = 16;
+    const ox = 14;
+    const oy = 14;
+    // 网格
+    art.lineStyle(1, 0x3a4a6b, 0.7);
+    for (let i = 0; i <= 4; i++) {
+      art.moveTo(ox + i * cs, oy);
+      art.lineTo(ox + i * cs, oy + 4 * cs);
+      art.moveTo(ox, oy + i * cs);
+      art.lineTo(ox + 4 * cs, oy + i * cs);
+    }
+    // 两条折线
+    art.lineStyle(4, 0x4fc3f7, 1);
+    art.moveTo(ox, oy + cs);
+    art.lineTo(ox + cs, oy + cs);
+    art.lineTo(ox + cs, oy + 2 * cs);
+    art.lineStyle(4, 0xff5c5c, 1);
+    art.moveTo(ox + 3 * cs, oy + 3 * cs);
+    art.lineTo(ox + 2 * cs, oy + 3 * cs);
+    art.lineTo(ox + 2 * cs, oy + 2 * cs);
+    // 端点
+    art.lineStyle(0);
+    [[ox, oy + cs, 0x4fc3f7], [ox + cs, oy + 2 * cs, 0x4fc3f7], [ox + 3 * cs, oy + 3 * cs, 0xff5c5c], [ox + 2 * cs, oy + 2 * cs, 0xff5c5c]].forEach(([x, y, color]) => {
+      art.beginFill(color);
+      art.drawCircle(x, y, 5);
+      art.endFill();
+    });
   } else {
     const blocks = [
       [22, 24, 0xff6b6b], [44, 24, 0xff6b6b],
@@ -286,7 +315,9 @@ export class HomeScreen {
             ? 0xe85d4a
             : game.id === 'blockstorm'
               ? 0x5b8def
-              : 0x497fd1;
+              : game.id === 'lines'
+                ? 0x4fc3f7
+                : 0x497fd1;
 
       // 卡片点击进入游戏（但拖拽时不触发）
       const goGame = () => {
